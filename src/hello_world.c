@@ -2,9 +2,6 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
-// gcc ./src/hello_world.c ./include/glad.c -o hello_world -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
-
-
 // Some GLSL code (need to find a better way to compile this)
 const char *vertexShaderSource = "#version 460 core\n"
     "layout (location = 0) in vec3 aPos;\n"
