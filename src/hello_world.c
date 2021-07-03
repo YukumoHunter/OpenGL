@@ -105,18 +105,41 @@ int main()
     glDeleteShader(fragmentShader); 
 
 
-    // vertices of the triangle
+    // vertex data
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f,  0.5f, 0.0f
+        0.5f,  0.5f, 0.0f,  // top right
+        0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f, // bottom left
+        -0.5f,  0.5f, 0.0f  // top left 
     };
 
-    unsigned int VBO, VAO;
+    // vertex draw order
+    unsigned int indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
+
+
+    unsigned int VBO, VAO, EBO;
     // Vertex Buffer Object:
     // store vertices in GPU memory for fast access
     // create buffer with buffer ID of 1
     glGenBuffers(1, &VBO); 
+
+    // bind the VBO to GL_ARRAY_BUFFER
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);  
+    // copy buffer into GPU memory
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Element Buffer Object:
+    // store indices (draw order)
+    // will reduce overhead by not including duplicate vertices
+    glGenBuffers(1, &EBO);
+
+    // bind the EBO to GL_ELEMENT_ARRAY_BUFFER
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    // copy buffer into GPU memory
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
 
     // Vertex Array Object:
     // used to store vertex attribute calls
@@ -125,11 +148,6 @@ int main()
 
     // bind the VAO 
     glBindVertexArray(VAO);
-
-    // bind the VBO to GL_ARRAY_BUFFER
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);  
-    // copy buffer into GPU memory
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // specify how to interpret vertex data
     // attribute params: location, size, data type, normalized (t/f), stride, offset
@@ -158,8 +176,17 @@ int main()
         glUseProgram(shaderProgram);
         // bind VAO
         glBindVertexArray(VAO);
-        // draw!!!!!!!!!!
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        // draw!!!
+        // glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        // draw wireframe
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        // glDrawElements to do indexed drawing with currently bound buffer
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 
         // swap buffers and poll events
         glfwPollEvents();
