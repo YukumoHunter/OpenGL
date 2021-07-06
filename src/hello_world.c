@@ -1,21 +1,10 @@
+#include <stdio.h>
+#include <math.h>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <stdio.h>
 
-// Some GLSL code (need to find a better way to compile this)
-const char *vertexShaderSource = "#version 460 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "}\0";
-
-const char *fragmentShaderSource = "#version 460 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(0.5f, 0.2f, 0.2f, 1.0f);;\n"
-    "}\0";
+#include "shader.h"
 
 unsigned int vertexShader;
 unsigned int fragmentShader;
@@ -55,70 +44,20 @@ int main()
     // adjust viewport on resize
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-
-    // CREATE VERTEX SHADER:
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    // bind vertex shader to source code and compile shader
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s", infoLog);
-    }
-
-
-    // CREATE FRAGMENT SHADER:
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    // bind fragment shader to source code and compile shader
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    // check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s", infoLog);
-    }
-
-    // create shader program and link shaders
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    // check for shader linking errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s", infoLog);
-    }
-
-    // delete shaders after use
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader); 
-
+    Shader shader = new_shader("src/shaders/vertex_shader.glsl", "src/shaders/fragment_shader.glsl");
 
     // vertex data
     float vertices[] = {
-        0.5f,  0.5f, 0.0f,  // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f, // bottom left
-        -0.5f,  0.5f, 0.0f  // top left 
-    };
+        // positions         // colors
+        0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
+        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
+    };    
 
     // vertex draw order
     unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
+        0, 1, 2
     };
-
 
     unsigned int VBO, VAO, EBO;
     // Vertex Buffer Object:
@@ -149,11 +88,16 @@ int main()
     // bind the VAO 
     glBindVertexArray(VAO);
 
-    // specify how to interpret vertex data
+    // specify how to interpret position in vertex shader
     // attribute params: location, size, data type, normalized (t/f), stride, offset
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     // enable vertex attribute at position 0
     glEnableVertexAttribArray(0);
+
+    // specify how to interpret color in vertex shader
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    // enable vertex attribute at position 0
+    glEnableVertexAttribArray(1);
 
     // call to glVertexAttribPointer registered VBO as the vertex attribute's bound
     // therefore we can safely unbind VBO
@@ -163,7 +107,7 @@ int main()
     // usually not needed since you need to call glBindVertexArray for this 
     glBindVertexArray(0);
 
-    while(!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(window))
     {
         // process inputs
         processInput(window);
@@ -173,12 +117,10 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         // use shaders
-        glUseProgram(shaderProgram);
+        use_shader(&shader);
+
         // bind VAO
         glBindVertexArray(VAO);
-
-        // draw!!!
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // draw wireframe
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
