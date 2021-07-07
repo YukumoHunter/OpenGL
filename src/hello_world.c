@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <math.h>
 
+// image loading
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -46,17 +51,86 @@ int main()
 
     Shader shader = new_shader("src/shaders/vertex_shader.glsl", "src/shaders/fragment_shader.glsl");
 
+    // create a texture
+    unsigned int texture, texture2;
+    glGenTextures(1, &texture);
+
+    // bind the texture
+    glBindTexture(GL_TEXTURE_2D, texture);  
+
+    // set texture wrapping/filtering options on bound texture object
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // texture loading
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("src/assets/container.jpg", &width, &height, &nrChannels, 0);
+
+    if (data)
+    {
+        // generate the bound texture
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+        // generate mipmapped texture
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        printf("Failed to load texture!\n");
+    }
+
+    // free loaded image data
+    stbi_image_free(data);
+
+    // create a second texture
+    glGenTextures(1, &texture2);
+
+    // bind the texture
+    glBindTexture(GL_TEXTURE_2D, texture2);  
+
+    // set texture wrapping/filtering options on bound texture object
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // texture loading
+    // flip image vertically
+    stbi_set_flip_vertically_on_load(true);  
+    data = stbi_load("src/assets/awesomeface.png", &width, &height, &nrChannels, 0);
+
+    if (data)
+    {
+        // generate the bound texture
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+        // generate mipmapped texture
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        printf("Failed to load texture!\n");
+    }
+
+    // free loaded image data
+    stbi_image_free(data);
+
     // vertex data
     float vertices[] = {
-        // positions         // colors
-        0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
-    };    
+        // positions          // colors           // texture coords
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+    };
 
     // vertex draw order
     unsigned int indices[] = {
-        0, 1, 2
+        0, 3, 2,
+        2, 1, 0
+        
     };
 
     unsigned int VBO, VAO, EBO;
@@ -90,14 +164,17 @@ int main()
 
     // specify how to interpret position in vertex shader
     // attribute params: location, size, data type, normalized (t/f), stride, offset
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     // enable vertex attribute at position 0
     glEnableVertexAttribArray(0);
 
     // specify how to interpret color in vertex shader
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    // enable vertex attribute at position 0
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    // specify how to interpret texture coordinates
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     // call to glVertexAttribPointer registered VBO as the vertex attribute's bound
     // therefore we can safely unbind VBO
@@ -118,6 +195,15 @@ int main()
 
         // use shaders
         use_shader(&shader);
+
+        glUniform1i(glGetUniformLocation(shader.ID, "texture1"), 0); // set it manually
+        set_int(&shader, "texture2", 1); // or with shader class
+
+        // bind textures
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture2);
 
         // bind VAO
         glBindVertexArray(VAO);

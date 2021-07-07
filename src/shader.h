@@ -15,8 +15,8 @@ typedef struct Shader {
 
 char *file_path_to_str(const char *string);
 
-Shader new_shader(char *vs_path, char *fs_path) {
-
+Shader new_shader(char *vs_path, char *fs_path)
+{
     const char *vs_source = file_path_to_str(vs_path);
     const char *fs_source = file_path_to_str(fs_path);
 
@@ -61,7 +61,8 @@ Shader new_shader(char *vs_path, char *fs_path) {
 
     // check for shader linking errors
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
+    if (!success)
+    {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s", infoLog);
     }
@@ -79,7 +80,8 @@ Shader new_shader(char *vs_path, char *fs_path) {
     return shader;
 }
 
-void use_shader(Shader *shader) {
+void use_shader(Shader *shader)
+{
     glUseProgram(shader->ID);
 }
 
@@ -99,7 +101,8 @@ void set_float(Shader *shader, const char *name, float value)
 }
 
 // TODO: should add some error handling here probably but dont care rn
-char *file_path_to_str(const char *string) {
+char *file_path_to_str(const char *string)
+{
     FILE *file = fopen(string, "r");
     char *str;
     // get filesize
