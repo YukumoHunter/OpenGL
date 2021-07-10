@@ -11,6 +11,8 @@
 
 #include "shader.h"
 
+#include <cglm/cglm.h>
+
 unsigned int vertexShader;
 unsigned int fragmentShader;
 
@@ -19,6 +21,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 int main()
 {
+
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -186,12 +189,23 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
+        
         // process inputs
         processInput(window);
 
         // perform rendering commands
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        // apply transformation
+        mat4 trans;
+        glm_mat4_identity(trans);
+
+        glm_translate(trans, (vec3) { 0.5f, -0.5f, 0.0f });
+        glm_rotate(trans, (float) glfwGetTime(), (vec3) { 0.0f, 0.0f, 1.0f });
+
+        unsigned int transform_loc = glGetUniformLocation(shader.ID, "transform");
+        glUniformMatrix4fv(transform_loc, 1, GL_FALSE, *trans);
 
         // use shaders
         use_shader(&shader);

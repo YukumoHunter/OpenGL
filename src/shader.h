@@ -15,7 +15,7 @@ typedef struct Shader {
 
 char *file_path_to_str(const char *string);
 
-Shader new_shader(char *vs_path, char *fs_path)
+Shader new_shader(const char *vs_path, const char *fs_path)
 {
     const char *vs_source = file_path_to_str(vs_path);
     const char *fs_source = file_path_to_str(fs_path);
@@ -109,7 +109,7 @@ char *file_path_to_str(const char *string)
     fseek(file, 0L, SEEK_END);
     size_t size = ftell(file);
     // allocate space
-    str = calloc(1, size);
+    str = (char*)calloc(1, size);
     // go back to beginning
     rewind(file);
     // read file into block
