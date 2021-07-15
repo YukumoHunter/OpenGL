@@ -87,22 +87,22 @@ void use_shader(Shader *shader)
     glUseProgram(shader->ID);
 }
 
-void set_bool(Shader *shader, const char *name, const bool value)
+void set_bool(Shader *shader, char *name, bool value)
 {         
     glUniform1i(glGetUniformLocation(shader->ID, name), (int)value); 
 }
 
-void set_int(Shader *shader, const char *name, const int value)
+void set_int(Shader *shader, char *name, int value)
 { 
     glUniform1i(glGetUniformLocation(shader->ID, name), value); 
 }
 
-void set_float(Shader *shader, const char *name, const float value)
+void set_float(Shader *shader, char *name, float value)
 { 
     glUniform1f(glGetUniformLocation(shader->ID, name), value); 
 }
 
-void set_mat4(Shader *shader, const char *name, const mat4 value)
+void set_mat4(Shader *shader, char *name, mat4 value)
 { 
     glUniformMatrix4fv(glGetUniformLocation(shader->ID, name), 1, GL_FALSE, &value[0][0]); 
 }
