@@ -10,24 +10,44 @@
 #include <GLFW/glfw3.h>
 
 #include "shader.h"
+#include "camera.h"
 
 #include <cglm/cglm.h>
+
+void process_input(GLFWwindow *window);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 unsigned int vertexShader;
 unsigned int fragmentShader;
 
-void processInput(GLFWwindow *window);
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+// window size
+const unsigned int SCR_WIDTH = 720;
+const unsigned int SCR_HEIGHT = 720;
+
+// init camera
+Camera camera;
+float last_x = SCR_WIDTH / 2.0f;
+float last_y = SCR_HEIGHT / 2.0f;
+bool first_mouse = true;
+
+// timing
+float delta = 0.0f;
+float last_frame = 0.0f;
 
 int main()
 {
+    camera = new_camera((vec3) { 0.0f, 0.0f, -1.0f }, (vec3) { 0.0f, 1.0f, 0.0f }, CAM_DEFAULT_YAW, CAM_DEFAULT_PITCH);
+    // for (int i = 0; i < 3; i++)
+    //     printf("%f %i ", camera.world_up[i], i);
+
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // create a window
-    GLFWwindow* window = glfwCreateWindow(720, 720, "🅱️ello world", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "🅱️ello world", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create GLFW window");
@@ -44,10 +64,16 @@ int main()
     }    
  
     // set viewport
-    glViewport(0, 0, 720, 720);
+    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-    // adjust viewport on resize
+    // capture cursor
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    // callbacks on window interaction
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    // glfwSetScrollCallback(window, scroll_callback);
+
 
     // old vertex data
     // float vertices[] = {
@@ -109,16 +135,16 @@ int main()
     };
 
     vec3 cubePositions[] = {
-    { 0.0f,  0.0f,  0.0f }, 
-    {  2.0f,  5.0f, -15.0f }, 
-    { -1.5f, -2.2f, -2.5f },  
-    { -3.8f, -2.0f, -12.3f },  
-    {  2.4f, -0.4f, -3.5f },  
-    { -1.7f,  3.0f, -7.5f },  
-    {  1.3f, -2.0f, -2.5f },  
-    {  1.5f,  2.0f, -2.5f }, 
-    {  1.5f,  0.2f, -1.5f }, 
-    { -1.3f,  1.0f, -1.5f }  
+        { 0.0f,  0.0f,  0.0f }, 
+        {  2.0f,  5.0f, -15.0f }, 
+        { -1.5f, -2.2f, -2.5f },  
+        { -3.8f, -2.0f, -12.3f },  
+        {  2.4f, -0.4f, -3.5f },  
+        { -1.7f,  3.0f, -7.5f },  
+        {  1.3f, -2.0f, -2.5f },  
+        {  1.5f,  2.0f, -2.5f }, 
+        {  1.5f,  0.2f, -1.5f }, 
+        { -1.3f,  1.0f, -1.5f }  
     };
 
     Shader shader = new_shader("src/shaders/vertex_shader.glsl", "src/shaders/fragment_shader.glsl");
@@ -256,8 +282,12 @@ int main()
     // render loop
     while (!glfwWindowShouldClose(window))
     {
+        float current_frame = glfwGetTime();
+        delta = current_frame - last_frame;
+        last_frame = current_frame;
+
         // process inputs
-        processInput(window);
+        process_input(window);
 
         // perform rendering commands
         glClearColor(1.0f, 0.2f, 0.5f, 1.0);
@@ -355,9 +385,29 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow *window)
+void mouse_callback(GLFWwindow *window, double x_pos, double y_pos)
+{
+    float x_offset = x_pos - last_x;
+    float y_offset = last_y - y_pos; // y coords go from bottom to top
+    last_x = x_pos;
+    last_y = y_pos;
+
+    // process_mouse_movement(&camera, x_offset, y_offset);
+}
+
+void process_input(GLFWwindow *window)
 {
     // close window on ESC press
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, 1);
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        process_keyboard(&camera, FORWARD, delta);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        process_keyboard(&camera, BACKWARD, delta);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        process_keyboard(&camera, LEFT, delta);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        process_keyboard(&camera, RIGHT, delta);
 }
+
