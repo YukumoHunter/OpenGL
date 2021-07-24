@@ -17,7 +17,7 @@ typedef struct Shader {
 
 char *file_path_to_str(const char *string);
 
-Shader new_shader(const char *vs_path, const char *fs_path)
+void init_shader(Shader *shader, const char *vs_path, const char *fs_path)
 {
     const char *vs_source = file_path_to_str(vs_path);
     const char *fs_source = file_path_to_str(fs_path);
@@ -38,7 +38,7 @@ Shader new_shader(const char *vs_path, const char *fs_path)
     if (!success)
     {
         glGetShaderInfoLog(vertex_shader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n%s", infoLog);
+        printf("Failed to compile vertex shader: %s\n", infoLog);
     }
 
     // CREATE FRAGMENT SHADER:
@@ -52,7 +52,7 @@ Shader new_shader(const char *vs_path, const char *fs_path)
     if (!success)
     {
         glGetShaderInfoLog(fragment_shader, 512, NULL, infoLog);
-        printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s", infoLog);
+        printf("Failed to compile fragment shader: %s\n", infoLog);
     }
 
     // create shader program and link shaders
@@ -66,20 +66,16 @@ Shader new_shader(const char *vs_path, const char *fs_path)
     if (!success)
     {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s", infoLog);
+        printf("Failed to link shader program: %s\n", infoLog);
     }
 
     // delete shaders after use
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
-    Shader shader = {
-        shaderProgram,
-        vs_source,
-        fs_source
-    };
-
-    return shader;
+    shader->ID = shaderProgram;
+    shader->vs_source = vs_source;
+    shader->fs_source = fs_source;
 }
 
 void use_shader(Shader *shader)

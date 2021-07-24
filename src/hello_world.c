@@ -14,9 +14,10 @@
 
 #include <cglm/cglm.h>
 
-void process_input(GLFWwindow *window);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void process_input(GLFWwindow *window);
 
 unsigned int vertexShader;
 unsigned int fragmentShader;
@@ -37,17 +38,18 @@ float last_frame = 0.0f;
 
 int main()
 {
-    camera = new_camera((vec3) { 0.0f, 0.0f, -1.0f }, (vec3) { 0.0f, 1.0f, 0.0f }, CAM_DEFAULT_YAW, CAM_DEFAULT_PITCH);
-    // for (int i = 0; i < 3; i++)
-    //     printf("%f %i ", camera.world_up[i], i);
+    vec3 pos = { 0.0f, 0.0f, 10.0f };
+    vec3 world_up = { 0.0f, 1.0f, 0.0f };
+
+    camera = new_camera(pos, world_up, CAM_DEFAULT_YAW, CAM_DEFAULT_PITCH);
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // create a window
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "🅱️ello world", NULL, NULL);
+    // create a window 🅱
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "bello world", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create GLFW window");
@@ -72,7 +74,7 @@ int main()
     // callbacks on window interaction
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
-    // glfwSetScrollCallback(window, scroll_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
 
     // old vertex data
@@ -136,9 +138,9 @@ int main()
 
     vec3 cubePositions[] = {
         { 0.0f,  0.0f,  0.0f }, 
-        {  2.0f,  5.0f, -15.0f }, 
+        {  2.0f,  5.0f, -5.0f }, 
         { -1.5f, -2.2f, -2.5f },  
-        { -3.8f, -2.0f, -12.3f },  
+        { -3.8f, -2.0f, -8.3f },  
         {  2.4f, -0.4f, -3.5f },  
         { -1.7f,  3.0f, -7.5f },  
         {  1.3f, -2.0f, -2.5f },  
@@ -147,7 +149,8 @@ int main()
         { -1.3f,  1.0f, -1.5f }  
     };
 
-    Shader shader = new_shader("src/shaders/vertex_shader.glsl", "src/shaders/fragment_shader.glsl");
+    Shader shader;
+    init_shader(&shader, "src/shaders/vertex_shader.glsl", "src/shaders/fragment_shader.glsl");
 
     // create a texture
     unsigned int texture, texture2;
@@ -303,9 +306,8 @@ int main()
         // unsigned int transform_loc = glGetUniformLocation(shader.ID, "transform");
         // glUniformMatrix4fv(transform_loc, 1, GL_FALSE, *trans);
 
-
-        // build clip coordinates using the formula
-        // V_clip = M_projection * M_view * M_model * V_local
+        // get clip coordinates using the formula:
+        // vec_clip = mat_projection * mat_view * mat_model * vec_local
 
         for(unsigned int i = 0; i < 10; i++)
         {
@@ -329,19 +331,21 @@ int main()
         // glm_rotate(model, glm_rad(-55.0f), (vec3) { 1.0f, 0.0f, 0.0f }); 
         glm_rotate(model, (float) glfwGetTime() * glm_rad(90.0f), (vec3) { 0.0f, 1.0f, 0.0f });  
 
-        // view matrix
-        glm_mat4_identity(view);
-        glm_translate(view, (vec3) { 0.0f, 0.0f, -3.0f });
+        // old view matrix
+        // glm_mat4_identity(view);
+        // glm_translate(view, (vec3) { 0.0f, 0.0f, -3.0f });
 
         // projection matrix
-        glm_perspective(glm_rad(75.0f), (float) width / (float) (height), 0.1f, 100.0f, projection);
+        glm_perspective(glm_rad(camera.zoom), (float) width / (float) (height), 0.1f, 100.0f, projection);
 
         // set uniforms
         int model_loc = glGetUniformLocation(shader.ID, "model");
         glUniformMatrix4fv(model_loc, 1, GL_FALSE, *model);
 
+        // use camera for view
+        get_view_matrix(&camera, view);
         int view_loc = glGetUniformLocation(shader.ID, "view");
-        glUniformMatrix4fv(view_loc, 1, GL_FALSE, *view);
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, view[0]);
 
         int projection_loc = glGetUniformLocation(shader.ID, "projection");
         glUniformMatrix4fv(projection_loc, 1, GL_FALSE, *projection);
@@ -392,15 +396,24 @@ void mouse_callback(GLFWwindow *window, double x_pos, double y_pos)
     last_x = x_pos;
     last_y = y_pos;
 
-    // process_mouse_movement(&camera, x_offset, y_offset);
+    process_mouse_movement(&camera, x_offset, y_offset);
+}
+
+void scroll_callback(GLFWwindow* window, double x_offset, double y_offset)
+{
+    process_mouse_scroll(&camera, y_offset);
 }
 
 void process_input(GLFWwindow *window)
 {
-    // close window on ESC press
+    // close window on ESC
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
         glfwSetWindowShouldClose(window, 1);
+        destroy_camera(&camera);
+    }
 
+    // process WASD
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         process_keyboard(&camera, FORWARD, delta);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
